@@ -1,7 +1,4 @@
 import mongoose from "mongoose";
-import mongooseSequence from "mongoose-sequence";
-
-const AutoIncrement = mongooseSequence(mongoose);
 
 const playerSchema = new mongoose.Schema(
   {
@@ -14,7 +11,13 @@ const playerSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Activer l'auto-incrémentation sur `id`
-playerSchema.plugin(AutoIncrement, { inc_field: "id" });
+// Avant de sauvegarder un joueur, trouver le plus grand ID existant
+playerSchema.pre("save", async function (next) {
+  if (!this.id) {
+    const lastPlayer = await mongoose.model("Player").findOne({}, {}, { sort: { id: -1 } });
+    this.id = lastPlayer ? lastPlayer.id + 1 : 1;
+  }
+  next();
+});
 
 export default mongoose.model("Player", playerSchema);

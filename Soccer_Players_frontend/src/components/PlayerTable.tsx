@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import {
   Table,
   TableBody,
@@ -18,6 +19,7 @@ import {
   useMediaQuery,
   CircularProgress,
 } from '@mui/material';
+import PlayerForm from './PlayerForm'; // Assurez-vous d'importer le composant PlayerForm
 
 interface Player {
   id: string;
@@ -86,8 +88,11 @@ export default function SoccerPlayersTable() {
   };
 
   const handleClick = (id: string) => {
-    const selectedIndex = selected.indexOf(id);
-    setSelected(selectedIndex === -1 ? [...selected, id] : selected.filter((_, ind) => ind !== selectedIndex));
+    setSelected((prevSelected) =>
+      prevSelected.includes(id)
+        ? prevSelected.filter((selectedId) => selectedId !== id)
+        : [...prevSelected, id]
+    );
   };
 
   const handleChangePage = (event: unknown, newPage: number) => setPage(newPage);
@@ -104,6 +109,7 @@ export default function SoccerPlayersTable() {
 
   const handleDeleteSelected = async () => {
     try {
+      console.log('Selected IDs:', selected); // Log des IDs sélectionnés
       const response = await fetch('/api/players', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -121,6 +127,39 @@ export default function SoccerPlayersTable() {
 
   const isSelected = (id: string) => selected.indexOf(id) !== -1;
 
+  // New states for form handling
+  const [formOpen, setFormOpen] = useState(false);
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
+
+  // New function to handle saving player
+  const handleSavePlayer = async (playerData: any) => {
+    try {
+      const url = selectedPlayer 
+        ? `/api/players/${selectedPlayer.id}`
+        : '/api/players';
+      
+      const method = selectedPlayer ? 'PUT' : 'POST';
+
+      const response = await axios({
+        method,
+        url,
+        data: playerData
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        // Handle successful save
+        console.log('Player saved successfully:', response.data);
+        // Close the form and reset selected player
+        setFormOpen(false);
+        setSelectedPlayer(null);
+        // Optionally, refresh the player list
+        fetchPlayers();
+      }
+    } catch (error) {
+      console.error('Error saving player:', error);
+    }
+  };
+
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
       <Paper sx={{
@@ -132,10 +171,21 @@ export default function SoccerPlayersTable() {
         boxShadow: 3,
         overflow: 'hidden',
       }}>
-        <Box sx={{ p: 2, backgroundColor: 'primary.main', color: 'white' }}>
-          <Typography variant="h5" component="div">
-            Soccer Players
-          </Typography>
+        <Box sx={{ p: 2, backgroundColor: 'gray', color: 'black' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h5" component="div">
+              Soccer Players
+            </Typography>
+            <Button 
+              variant="contained" 
+              onClick={() => {
+                setSelectedPlayer(null);
+                setFormOpen(true);
+              }}
+            >
+              Add Player
+            </Button>
+          </Box>
         </Box>
         <Box sx={{ p: 2 }}>
           <TextField
@@ -176,6 +226,7 @@ export default function SoccerPlayersTable() {
                         </TableSortLabel>
                       </TableCell>
                     ))}
+                    <TableCell>Actions</TableCell> {/* New column for actions */}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -207,6 +258,18 @@ export default function SoccerPlayersTable() {
                         <TableCell>{row.age}</TableCell>
                         <TableCell>{row.nationality}</TableCell>
                         <TableCell>{row.goals}</TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outlined" 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedPlayer(row);
+                              setFormOpen(true);
+                            }}
+                          >
+                            Edit
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     );
                   })}
@@ -239,6 +302,12 @@ export default function SoccerPlayersTable() {
           />
         </Box>
       </Paper>
+      <PlayerForm
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        player={selectedPlayer}
+        onSave={handleSavePlayer}
+      />
     </Box>
   );
 }

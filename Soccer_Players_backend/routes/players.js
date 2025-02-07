@@ -1,5 +1,6 @@
 import express from 'express';
 import Player from '../models/Player.js';
+import mongoose from 'mongoose';
 
 const router = express.Router();
 
@@ -39,14 +40,51 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Supprimer des joueurs
-router.delete('/', async (req, res) => {
+// Créer un joueur (POST)
+router.post('/', async (req, res) => {
   try {
-    await Player.deleteMany({ _id: { $in: req.body.ids } });
-    res.json({ message: 'Players deleted successfully' });
+    const newPlayer = await Player.create(req.body);
+    res.status(201).json(newPlayer);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(400).json({ message: err.message });
   }
 });
+
+// Mettre à jour un joueur (PUT)
+router.put('/:id', async (req, res) => {
+  try {
+    const updatedPlayer = await Player.findOneAndUpdate(
+      { id: req.params.id },
+      req.body,
+      { new: true }
+    );
+    res.json(updatedPlayer);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+// Supprimer un joueur (DELETE)
+router.delete('/', async (req, res) => {
+    try {
+        const { ids } = req.body; // Récupérer les IDs depuis le corps de la requête
+
+        if (!ids || !Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ message: 'Veuillez fournir un ou plusieurs IDs valides' });
+        }
+
+        // Supprimer les joueurs qui ont un `id` correspondant dans la liste
+        const result = await Player.deleteMany({ id: { $in: ids } });
+
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ message: 'Aucun joueur trouvé avec ces IDs' });
+        }
+
+        res.json({ message: `${result.deletedCount} joueur(s) supprimé(s) avec succès` });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 
 export default router;
