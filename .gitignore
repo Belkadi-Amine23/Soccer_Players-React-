@@ -1,0 +1,34 @@
+# Node modules
+**/node_modules/
+
+# Environnement
+**/.env
+
+# Logs
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+**/logs/
+*.log
+
+# Build output
+**/dist/
+**/build/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# ESLint and Prettier
+.eslintcache
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
