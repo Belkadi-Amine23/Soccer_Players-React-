@@ -1,6 +1,7 @@
 import express from 'express';
 import Player from '../models/Player.js';
-import mongoose from 'mongoose';
+import { authMiddleware } from '../middleware/auth.js'; // Importez authMiddleware
+
 
 const router = express.Router();
 
@@ -86,5 +87,17 @@ router.delete('/', async (req, res) => {
     }
 });
 
+router.patch('/:id/rating', authMiddleware, async (req, res) => {
+  try {
+    const player = await Player.findOneAndUpdate(
+      { id: req.params.id },
+      { $set: { rating: req.body.rating } },
+      { new: true }
+    );
+    res.json(player);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
 
 export default router;

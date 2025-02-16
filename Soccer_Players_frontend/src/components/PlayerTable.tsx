@@ -20,6 +20,7 @@ import {
   CircularProgress,
 } from '@mui/material';
 import PlayerForm from './PlayerForm'; // Assurez-vous d'importer le composant PlayerForm
+import { Link } from 'react-router-dom';
 
 interface Player {
   id: string;
@@ -31,6 +32,10 @@ interface Player {
 
 type SortKey = 'name' | 'age' | 'nationality' | 'goals' | 'id';
 
+interface User {
+  role: string;
+}
+
 export default function SoccerPlayersTable() {
   const [data, setData] = useState<Player[]>([]);
   const [total, setTotal] = useState(0);
@@ -41,6 +46,7 @@ export default function SoccerPlayersTable() {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [filter, setFilter] = useState('');
   const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState<User | null>(null); // Ajoutez l'état pour l'utilisateur
 
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
@@ -70,6 +76,8 @@ export default function SoccerPlayersTable() {
 
   useEffect(() => {
     fetchPlayers();
+    // Simuler la récupération de l'utilisateur connecté
+    setUser({ role: 'admin' }); // Remplacez par la logique réelle pour récupérer l'utilisateur
   }, [fetchPlayers]);
 
   const handleRequestSort = (property: SortKey) => {
@@ -160,6 +168,11 @@ export default function SoccerPlayersTable() {
     }
   };
 
+  const logout = () => {
+    // Ajoutez la logique de déconnexion ici
+    console.log('User logged out');
+  };
+
   return (
     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%' }}>
       <Paper sx={{
@@ -176,15 +189,19 @@ export default function SoccerPlayersTable() {
             <Typography variant="h5" component="div">
               Soccer Players
             </Typography>
-            <Button 
-              variant="contained" 
-              onClick={() => {
-                setSelectedPlayer(null);
-                setFormOpen(true);
-              }}
-            >
-              Add Player
-            </Button>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+  {user?.role === 'admin' && (
+    <Button component={Link} to="/admin" variant="contained">
+      Dashboard Admin
+    </Button>
+  )}
+  <Button component={Link} to="/my-team" variant="contained">
+    Mon équipe
+  </Button>
+  <Button component={Link} to="/ratings" variant="contained">
+    Noter les joueurs
+  </Button>
+</Box>
           </Box>
         </Box>
         <Box sx={{ p: 2 }}>
@@ -259,16 +276,18 @@ export default function SoccerPlayersTable() {
                         <TableCell>{row.nationality}</TableCell>
                         <TableCell>{row.goals}</TableCell>
                         <TableCell>
-                          <Button 
-                            variant="outlined" 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedPlayer(row);
-                              setFormOpen(true);
-                            }}
-                          >
-                            Edit
-                          </Button>
+                          {user?.role === 'admin' && (
+                            <Button 
+                              variant="outlined" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedPlayer(row);
+                                setFormOpen(true);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     );
@@ -279,15 +298,17 @@ export default function SoccerPlayersTable() {
           </TableContainer>
 
           <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%', mt: 2 }}>
-            <Button
-              variant="contained"
-              color="error"
-              onClick={handleDeleteSelected}
-              disabled={selected.length === 0 || loading}
-              sx={{ width: '200px', borderRadius: '8px', marginBottom: 5 }}
-            >
-              Delete Selected
-            </Button>
+            {user?.role === 'admin' && (
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handleDeleteSelected}
+                disabled={selected.length === 0 || loading}
+                sx={{ width: '200px', borderRadius: '8px', marginBottom: 5 }}
+              >
+                Delete Selected
+              </Button>
+            )}
           </Box>
 
           <TablePagination
@@ -302,12 +323,14 @@ export default function SoccerPlayersTable() {
           />
         </Box>
       </Paper>
-      <PlayerForm
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        player={selectedPlayer}
-        onSave={handleSavePlayer}
-      />
+      {user?.role === 'admin' && (
+        <PlayerForm
+          open={formOpen}
+          onClose={() => setFormOpen(false)}
+          player={selectedPlayer}
+          onSave={handleSavePlayer}
+        />
+      )}
     </Box>
   );
 }
